@@ -59,12 +59,24 @@ public class Analysis {
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class AnalysisSample {
     private AnalysisDonor donor;
+    private AnalysisSpecimen specimen;
+    private String sampleId;
+    private String submitterSampleId;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class AnalysisSpecimen {
+    private String specimenId;
+    private String submitterSpecimenId;
+    private String tumourNormalDesignation;
   }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class AnalysisDonor {
     private String donorId;
+    private String submitterDonorId;
   }
 
   @Data
