@@ -16,7 +16,7 @@ spec:
     - name: graalvm
       command: ['cat']
       tty: true
-      image: icgcargo/graalvm:java11-20.2.0-extras-1.0.0
+      image: ghcr.io/icgc-argo/graalvm-docker-image:java11-21.2.0-extras-1.0.0
     - name: dind-daemon
       image: docker:18.06-dind
       securityContext:
