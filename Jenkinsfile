@@ -16,25 +16,26 @@ spec:
     - name: graalvm
       command: ['cat']
       tty: true
-      image: icgcargo/graalvm:java11-20.2.0-extras-1.0.0
+      image: ghcr.io/icgc-argo/graalvm-docker-image:java11-21.2.0-extras-1.0.0
     - name: dind-daemon
       image: docker:18.06-dind
       securityContext:
         privileged: true
+        runAsUser: 0
       volumeMounts:
         - name: docker-graph-storage
           mountPath: /var/lib/docker
     - name: docker
       image: docker:18-git
       tty: true
-      volumeMounts:
-      - mountPath: /var/run/docker.sock
-        name: docker-sock
+      env:
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+      - name: HOME
+        value: /home/jenkins/agent
+  securityContext:
+    runAsUser: 1000
   volumes:
-    - name: docker-sock
-      hostPath:
-        path: /var/run/docker.sock
-        type: File
     - name: docker-graph-storage
       emptyDir: {}
 """

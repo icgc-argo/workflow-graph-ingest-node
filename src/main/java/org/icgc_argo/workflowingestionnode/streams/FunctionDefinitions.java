@@ -20,11 +20,14 @@ package org.icgc_argo.workflowingestionnode.streams;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc_argo.workflow_graph_lib.schema.AnalysisFile;
+import org.icgc_argo.workflow_graph_lib.schema.AnalysisSample;
 import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
 import org.icgc_argo.workflowingestionnode.model.Analysis;
 import org.icgc_argo.workflowingestionnode.model.AnalysisEvent;
@@ -75,12 +78,32 @@ public class FunctionDefinitions {
         .setAnalysisState(analysis.getAnalysisState())
         .setAnalysisType(analysis.getAnalysisType())
         .setStudyId(analysis.getStudyId())
-        .setDonorIds(analysis.getDonorIds())
-        .setFiles(
-            analysis.getFiles().stream()
-                .map(f -> new AnalysisFile(f.getDataType()))
-                .collect(toUnmodifiableList()))
+        .setSamples(createAnalysisSamplesForGe(analysis))
+        .setFiles(createAnalysisFilesForGe(analysis))
         .setExperimentalStrategy(analysis.getExperiment().getExperimentalStrategy())
         .build();
+  }
+
+  private List<AnalysisSample> createAnalysisSamplesForGe(Analysis analysis) {
+    return analysis.getSamples().stream()
+        .map(
+            sam ->
+                AnalysisSample.newBuilder()
+                    .setSampleId(sam.getSampleId())
+                    .setSampleId(sam.getSampleId())
+                    .setSubmitterSampleId(sam.getSubmitterSampleId())
+                    .setDonorId(sam.getDonor().getDonorId())
+                    .setSubmitterDonorId(sam.getDonor().getSubmitterDonorId())
+                    .setSpecimenId(sam.getSpecimen().getSpecimenId())
+                    .setSubmitterSpecimenId(sam.getSpecimen().getSubmitterSpecimenId())
+                    .setTumourNormalDesignation(sam.getSpecimen().getTumourNormalDesignation())
+                    .build())
+        .collect(Collectors.toUnmodifiableList());
+  }
+
+  private List<AnalysisFile> createAnalysisFilesForGe(Analysis analysis) {
+    return analysis.getFiles().stream()
+        .map(f -> new AnalysisFile(f.getDataType()))
+        .collect(toUnmodifiableList());
   }
 }
