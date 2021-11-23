@@ -24,12 +24,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc_argo.workflowingestionnode.model.GqlAnalysesFetcherResult;
 import org.icgc_argo.workflowingestionnode.model.GqlAnalysis;
 import org.springframework.web.client.RestTemplate;
 
 @RequiredArgsConstructor
+@Slf4j
 public class GqlAnalysesFetcher implements BiFunction<String, String, Optional<GqlAnalysis>> {
   private final String rdpcUrl;
   private final RestTemplate template;
@@ -38,6 +40,7 @@ public class GqlAnalysesFetcher implements BiFunction<String, String, Optional<G
     val variables = Map.of(ANALYSIS_ID_KEY, analysisId, STUDY_ID_KEY, studyId);
     val body = Map.of("query", GQL_QUERY, "variables", variables);
     val result = template.postForObject(rdpcUrl, body, GqlAnalysesFetcherResult.class);
+    log.info("Fetch result {}", result);
     return Optional.ofNullable(result)
         .map(GqlAnalysesFetcherResult::getData)
         .map(GqlAnalysesFetcherResult.GqlResultData::getAnalyses)
