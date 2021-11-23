@@ -18,61 +18,64 @@
 
 package org.icgc_argo.workflowingestionnode.components;
 
-import lombok.RequiredArgsConstructor;
-import lombok.val;
-import org.icgc_argo.workflowingestionnode.model.GqlAnalysis;
-import org.icgc_argo.workflowingestionnode.model.GqlAnalysesFetcherResult;
-import org.springframework.web.client.RestTemplate;
+import static java.lang.String.format;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
+import org.icgc_argo.workflowingestionnode.model.GqlAnalysesFetcherResult;
+import org.icgc_argo.workflowingestionnode.model.GqlAnalysis;
+import org.springframework.web.client.RestTemplate;
 
 @RequiredArgsConstructor
-public class GqlAnalysesFetcher implements Function<String, Optional<GqlAnalysis>> {
-    private final String rdpcUrl;
-    private final RestTemplate template;
+public class GqlAnalysesFetcher implements BiFunction<String, String, Optional<GqlAnalysis>> {
+  private final String rdpcUrl;
+  private final RestTemplate template;
 
-    public Optional<GqlAnalysis> apply(String id) {
-        val variables = Map.of(ANALYSIS_ID_KEY, id);
-        val body = Map.of("query", GQL_QUERY, "variables", variables);
-        val result = template.postForObject(rdpcUrl, body, GqlAnalysesFetcherResult.class);
-        return Optional.ofNullable(result)
-                .map(GqlAnalysesFetcherResult::getData)
-                .map(GqlAnalysesFetcherResult.GqlResultData::getAnalyses)
-                .map(GqlAnalysesFetcherResult.GqlResultAnalyses::getContent)
-                .map(l -> l.get(0));
-    }
+  public Optional<GqlAnalysis> apply(String analysisId, String studyId) {
+    val variables = Map.of(ANALYSIS_ID_KEY, analysisId, STUDY_ID_KEY, studyId);
+    val body = Map.of("query", GQL_QUERY, "variables", variables);
+    val result = template.postForObject(rdpcUrl, body, GqlAnalysesFetcherResult.class);
+    return Optional.ofNullable(result)
+        .map(GqlAnalysesFetcherResult::getData)
+        .map(GqlAnalysesFetcherResult.GqlResultData::getAnalyses)
+        .map(GqlAnalysesFetcherResult.GqlResultAnalyses::getContent)
+        .map(l -> l.isEmpty() ? null : l.get(0));
+  }
 
-    private static final String ANALYSIS_ID_KEY = "analysisId";
+  private static final String ANALYSIS_ID_KEY = "analysisId";
+  private static final String STUDY_ID_KEY = "studyId";
 
-    private static final String GQL_QUERY =  "query ($"+ ANALYSIS_ID_KEY + ": String) {\n" +
-                       "  analyses(filter: {analysisId: $analysisId}, page: {size: 1, from: 0}) {\n" +
-                       "    content {\n" +
-                       "      analysisId\n" +
-                       "      studyId\n" +
-                       "      analysisState\n" +
-                       "      analysisType\n" +
-                       "      experiment\n" +
-                       "      files {\n" +
-                       "        dataType\n" +
-                       "      }\n" +
-                       "      donors {\n" +
-                       "        donorId\n" +
-                       "        submitterDonorId\n" +
-                       "        specimens {\n" +
-                       "          specimenId\n" +
-                       "          submitterSpecimenId\n" +
-                       "          tumourNormalDesignation\n" +
-                       "          samples {\n" +
-                       "            sampleId\n" +
-                       "            submitterSampleId\n" +
-                       "          }\n" +
-                       "        }\n" +
-                       "      }\n" +
-                       "    }\n" +
-                       "  }\n" +
-                       "}\n";
-
-
+  private static final String GQL_QUERY =
+      format(
+          "query ($%s: String, $%s: String) {\n"
+              + "  analyses(filter: {analysisId: $%s, studyId: $%s}, page: {size: 1, from: 0}) {\n"
+              + "    content {\n"
+              + "      analysisId\n"
+              + "      studyId\n"
+              + "      analysisState\n"
+              + "      analysisType\n"
+              + "      experiment\n"
+              + "      files {\n"
+              + "        dataType\n"
+              + "      }\n"
+              + "      donors {\n"
+              + "        donorId\n"
+              + "        submitterDonorId\n"
+              + "        specimens {\n"
+              + "          specimenId\n"
+              + "          submitterSpecimenId\n"
+              + "          tumourNormalDesignation\n"
+              + "          samples {\n"
+              + "            sampleId\n"
+              + "            submitterSampleId\n"
+              + "          }\n"
+              + "        }\n"
+              + "      }\n"
+              + "    }\n"
+              + "  }\n"
+              + "}\n",
+          ANALYSIS_ID_KEY, STUDY_ID_KEY, ANALYSIS_ID_KEY, STUDY_ID_KEY);
 }

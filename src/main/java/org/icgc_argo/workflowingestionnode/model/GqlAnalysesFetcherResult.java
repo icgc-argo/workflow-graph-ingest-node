@@ -19,24 +19,23 @@
 package org.icgc_argo.workflowingestionnode.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GqlAnalysesFetcherResult {
-    private GqlResultData data;
+  private GqlResultData data;
 
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class GqlResultData {
-        private GqlResultAnalyses analyses;
-    }
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class GqlResultData {
+    private GqlResultAnalyses analyses;
+  }
 
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class GqlResultAnalyses {
-        private List<GqlAnalysis> content;
-    }
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class GqlResultAnalyses {
+    private List<GqlAnalysis> content;
+  }
 }

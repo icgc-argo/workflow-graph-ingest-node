@@ -31,51 +31,44 @@ public class GqlAnalysis {
   private String analysisType;
   private String analysisState;
   private String studyId;
-  private List<AnalysisDonor> donors;
-  private List<AnalysisSample> samples;
-  private List<AnalysisFile> files;
-  private AnalysisExperiment experiment;
+  private List<Donor> donors;
+  private List<File> files;
+  private Experiment experiment;
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class AnalysisType {
-    private String name;
-  }
-
-  @Data
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class AnalysisSample {
+  public static class Sample {
     private String sampleId;
     private String submitterSampleId;
   }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class AnalysisSpecimen {
+  public static class Specimen {
     private String specimenId;
     private String submitterSpecimenId;
     private String tumourNormalDesignation;
-    private List<AnalysisSample> samples;
+    private List<Sample> samples;
   }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class AnalysisDonor {
+  public static class Donor {
     private String donorId;
     private String submitterDonorId;
-    private List<AnalysisSpecimen> specimens;
+    private List<Specimen> specimens;
   }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class AnalysisFile {
+  public static class File {
     private String dataType;
   }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
   @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-  public static class AnalysisExperiment {
+  public static class Experiment {
     private String experimentalStrategy;
   }
 }

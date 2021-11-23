@@ -19,7 +19,6 @@
 package org.icgc_argo.workflowingestionnode.components;
 
 import java.util.function.Supplier;
-
 import lombok.val;
 import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
 import org.springframework.cloud.schema.registry.avro.AvroSchemaMessageConverter;
@@ -27,10 +26,10 @@ import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.util.MimeType;
 
 public class GraphEventConverterSupplier implements Supplier<MessageConverter> {
-    public MessageConverter get() {
-        val converter =
-                new AvroSchemaMessageConverter(new MimeType("application", "vnd.GraphEvent+avro"));
-        converter.setSchema(GraphEvent.getClassSchema());
-        return converter;
-    }
+  public MessageConverter get() {
+    val converter =
+        new AvroSchemaMessageConverter(new MimeType("application", "vnd.GraphEvent+avro"));
+    converter.setSchema(GraphEvent.getClassSchema());
+    return converter;
+  }
 }

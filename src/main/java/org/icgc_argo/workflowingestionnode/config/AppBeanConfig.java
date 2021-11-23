@@ -39,41 +39,41 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class AppBeanConfig {
 
-    @Profile("!oauth")
-    @Bean
-    public GqlAnalysesFetcher defaultGqlAnalysesFetcher(@Value("${rdpc.url}") String rdpcUrl) {
-        return new GqlAnalysesFetcher(rdpcUrl, new RestTemplate());
-    }
+  @Profile("!oauth")
+  @Bean
+  public GqlAnalysesFetcher defaultGqlAnalysesFetcher(@Value("${rdpc.url}") String rdpcUrl) {
+    return new GqlAnalysesFetcher(rdpcUrl, new RestTemplate());
+  }
 
-    @Profile("oauth")
-    @Bean
-    public GqlAnalysesFetcher oauthGqlAnalysesFetcher(
-            @Value("${rdpc.oauth.clientId}") String clientId,
-            @Value("${rdpc.oauth.clientSecret}") String clientSecret,
-            @Value("${rdpc.oauth.tokenUrl}") String tokenUrl,
-            @Value("${rdpc.url}") String rdpcUrl) {
+  @Profile("oauth")
+  @Bean
+  public GqlAnalysesFetcher oauthGqlAnalysesFetcher(
+      @Value("${rdpc.oauth.clientId}") String clientId,
+      @Value("${rdpc.oauth.clientSecret}") String clientSecret,
+      @Value("${rdpc.oauth.tokenUrl}") String tokenUrl,
+      @Value("${rdpc.url}") String rdpcUrl) {
 
-        val clientCredentialResource = new ClientCredentialsResourceDetails();
-        clientCredentialResource.setClientAuthenticationScheme(AuthenticationScheme.query);
-        clientCredentialResource.setAccessTokenUri(tokenUrl);
-        clientCredentialResource.setClientId(clientId);
-        clientCredentialResource.setClientSecret(clientSecret);
-        clientCredentialResource.setGrantType("client_credentials");
+    val clientCredentialResource = new ClientCredentialsResourceDetails();
+    clientCredentialResource.setClientAuthenticationScheme(AuthenticationScheme.query);
+    clientCredentialResource.setAccessTokenUri(tokenUrl);
+    clientCredentialResource.setClientId(clientId);
+    clientCredentialResource.setClientSecret(clientSecret);
+    clientCredentialResource.setGrantType("client_credentials");
 
-        val atr = new DefaultAccessTokenRequest();
-        val ctx = new DefaultOAuth2ClientContext(atr);
-        val oauth2RestTemplate = new OAuth2RestTemplate(clientCredentialResource, ctx);
-        oauth2RestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-        return new GqlAnalysesFetcher(rdpcUrl, oauth2RestTemplate);
-    }
+    val atr = new DefaultAccessTokenRequest();
+    val ctx = new DefaultOAuth2ClientContext(atr);
+    val oauth2RestTemplate = new OAuth2RestTemplate(clientCredentialResource, ctx);
+    oauth2RestTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+    return new GqlAnalysesFetcher(rdpcUrl, oauth2RestTemplate);
+  }
 
-    @Bean
-    public MessageProcessor processor(@Autowired GqlAnalysesFetcher analysesFetcher) {
-        return new MessageProcessor(analysesFetcher);
-    }
+  @Bean
+  public MessageProcessor processor(@Autowired GqlAnalysesFetcher analysesFetcher) {
+    return new MessageProcessor(analysesFetcher);
+  }
 
-    @Bean
-    public MessageConverter graphEventConverter() {
-        return new GraphEventConverterSupplier().get();
-    }
+  @Bean
+  public MessageConverter graphEventConverter() {
+    return new GraphEventConverterSupplier().get();
+  }
 }

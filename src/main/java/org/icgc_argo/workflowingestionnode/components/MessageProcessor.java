@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -46,29 +45,40 @@ public class MessageProcessor implements Function<Message<SongAnalysisEvent>, Me
   private final GqlAnalysesFetcher analysesFetcher;
 
   @SneakyThrows
-  public Message<GraphEvent> apply(Message<SongAnalysisEvent> analysisEventMessage) {
-      val analysis = analysisEventMessage.getPayload().getAnalysis();
-      log.info("Received analysis: {}", analysis);
+  public Message<GraphEvent> apply(Message<SongAnalysisEvent> message) {
+    // First filter messages that are not what we want
+    val event = message.getPayload();
+    log.info("Received SongAnalysisEvent: {}", event);
+    if (!isAcceptedSongAnalysisEvent(event)) {
+      log.info("Filtered (ignored) analysis: {}", event);
+      return null; // returning null acknowledges and discards received message
+    }
+    val aid = event.getAnalysisId();
+    val sid = event.getAnalysis().getStudyId();
 
-      if (!isAcceptedAnalysis(analysis)) {
-        log.info("Filtered (ignored) analysis: {}", analysis);
-        return null; // returning null acknowledges and discards received message
-      }
+    // Next check analysis in message exists in RDPC
+    val gqlAnalysisOpt = analysesFetcher.apply(aid, sid);
+    if (gqlAnalysisOpt.isEmpty()) {
+      log.info(
+          "GqlAnalysis could not be found for analysis in SongAnalysisEvent - {}, {}!", sid, aid);
+      throw new Exception("GqlAnalysis could not be found for analysisId in SongAnalysisEvent!");
+    }
 
-      val gqlAnalysisOpt = analysesFetcher.apply(analysis.getAnalysisId());
-      if (gqlAnalysisOpt.isEmpty()) {
-          throw new Exception("GqlAnalysis for SongAnalysisEvent could not be found!");
-      }
+    // Then check analysis state and type from RPDC is what we found in the event
+    val gqlAnalysis = gqlAnalysisOpt.get();
+    if (!isAcceptedGqlAnalysis(gqlAnalysis)) {
+      log.info(
+          "GqlAnalysis analysis state and type is different from SongAnalysisEvent - {}, {}!",
+          sid,
+          aid);
+      throw new Exception(
+          "GqlAnalysis analysis state and type is different from SongAnalysisEvent!");
+    }
 
-      val gqlAnalysis = gqlAnalysisOpt.get();
-      if (isNotAcceptedGqlAnalysis(gqlAnalysis)) {
-          throw new Exception("GqlAnalysis is not PUBLISHED and/or type is not sequencing_experiment");
-      }
-
-      val ge = convertToGraphEvent(gqlAnalysis);
-      log.info("Sending graph event: {}", ge);
-
-      return convertToGraphEventMessage(ge);
+    // After all checks are good, create GraphEvent and return
+    val ge = convertToGraphEvent(gqlAnalysis);
+    log.info("Created graph event: {}", ge);
+    return convertToGraphEventMessage(ge);
   }
 
   private Message<GraphEvent> convertToGraphEventMessage(GraphEvent graphEvent) {
@@ -77,14 +87,14 @@ public class MessageProcessor implements Function<Message<SongAnalysisEvent>, Me
         .build();
   }
 
-  private Boolean isAcceptedAnalysis(SongAnalysisEvent.Analysis analysis) {
-    return analysis.getAnalysisType().getName().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
-        && analysis.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+  private Boolean isAcceptedSongAnalysisEvent(SongAnalysisEvent event) {
+    return event.getAnalysis().getAnalysisType().getName().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+        && event.getAnalysis().getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
-  private Boolean isNotAcceptedGqlAnalysis(GqlAnalysis analysis) {
-      return analysis.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
-          && analysis.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+  private Boolean isAcceptedGqlAnalysis(GqlAnalysis analysis) {
+    return analysis.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+        && analysis.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
   private GraphEvent convertToGraphEvent(GqlAnalysis analysis) {
@@ -104,18 +114,23 @@ public class MessageProcessor implements Function<Message<SongAnalysisEvent>, Me
     return analysis.getDonors().stream()
         .flatMap(
             donor ->
-              donor.getSpecimens().stream().flatMap(specimen ->
-                specimen.getSamples().stream().map(sample -> AnalysisSample.newBuilder()
-                        .setDonorId(donor.getDonorId())
-                        .setSubmitterDonorId(donor.getSubmitterDonorId())
-                        .setSpecimenId(specimen.getSpecimenId())
-                        .setSubmitterSpecimenId(specimen.getSubmitterSpecimenId())
-                        .setTumourNormalDesignation(specimen.getTumourNormalDesignation())
-                        .setSampleId(sample.getSampleId())
-                        .setSubmitterSampleId(sample.getSubmitterSampleId())
-                        .build())
-              )
-            )
+                donor.getSpecimens().stream()
+                    .flatMap(
+                        specimen ->
+                            specimen.getSamples().stream()
+                                .map(
+                                    sample ->
+                                        AnalysisSample.newBuilder()
+                                            .setDonorId(donor.getDonorId())
+                                            .setSubmitterDonorId(donor.getSubmitterDonorId())
+                                            .setSpecimenId(specimen.getSpecimenId())
+                                            .setSubmitterSpecimenId(
+                                                specimen.getSubmitterSpecimenId())
+                                            .setTumourNormalDesignation(
+                                                specimen.getTumourNormalDesignation())
+                                            .setSampleId(sample.getSampleId())
+                                            .setSubmitterSampleId(sample.getSubmitterSampleId())
+                                            .build())))
         .collect(Collectors.toUnmodifiableList());
   }
 
