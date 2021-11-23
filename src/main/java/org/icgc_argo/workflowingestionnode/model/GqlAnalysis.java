@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -18,8 +18,6 @@
 
 package org.icgc_argo.workflowingestionnode.model;
 
-import static java.util.stream.Collectors.toUnmodifiableList;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -28,26 +26,15 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Analysis {
+public class GqlAnalysis {
   private String analysisId;
-  private AnalysisType analysisType;
+  private String analysisType;
   private String analysisState;
   private String studyId;
+  private List<AnalysisDonor> donors;
   private List<AnalysisSample> samples;
   private List<AnalysisFile> files;
   private AnalysisExperiment experiment;
-
-  public String getAnalysisType() {
-    return analysisType.getName();
-  }
-
-  public List<String> getDonorIds() {
-    return samples.stream()
-        .map(AnalysisSample::getDonor)
-        .map(AnalysisDonor::getDonorId)
-        .distinct()
-        .collect(toUnmodifiableList());
-  }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -58,8 +45,6 @@ public class Analysis {
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class AnalysisSample {
-    private AnalysisDonor donor;
-    private AnalysisSpecimen specimen;
     private String sampleId;
     private String submitterSampleId;
   }
@@ -70,6 +55,7 @@ public class Analysis {
     private String specimenId;
     private String submitterSpecimenId;
     private String tumourNormalDesignation;
+    private List<AnalysisSample> samples;
   }
 
   @Data
@@ -77,6 +63,7 @@ public class Analysis {
   public static class AnalysisDonor {
     private String donorId;
     private String submitterDonorId;
+    private List<AnalysisSpecimen> specimens;
   }
 
   @Data

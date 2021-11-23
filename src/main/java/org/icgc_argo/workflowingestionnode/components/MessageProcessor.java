@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc_argo.workflowingestionnode.streams;
+package org.icgc_argo.workflowingestionnode.components;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
 
@@ -24,27 +24,29 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc_argo.workflow_graph_lib.schema.AnalysisFile;
 import org.icgc_argo.workflow_graph_lib.schema.AnalysisSample;
 import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
-import org.icgc_argo.workflowingestionnode.model.Analysis;
-import org.icgc_argo.workflowingestionnode.model.AnalysisEvent;
-import org.springframework.context.annotation.Bean;
+import org.icgc_argo.workflowingestionnode.model.GqlAnalysis;
+import org.icgc_argo.workflowingestionnode.model.SongAnalysisEvent;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.stereotype.Component;
 
-@Component
+@RequiredArgsConstructor
 @Slf4j
-public class FunctionDefinitions {
+public class MessageProcessor implements Function<Message<SongAnalysisEvent>, Message<GraphEvent>> {
   private static final String ACCEPTED_ANALYSIS_STATE = "PUBLISHED";
   private static final String ACCEPTED_ANALYSIS_TYPE = "sequencing_experiment";
 
-  @Bean
-  public Function<Message<AnalysisEvent>, Message<GraphEvent>> processor() {
-    return analysisEventMessage -> {
+  private final GqlAnalysesFetcher analysesFetcher;
+
+  @SneakyThrows
+  public Message<GraphEvent> apply(Message<SongAnalysisEvent> analysisEventMessage) {
       val analysis = analysisEventMessage.getPayload().getAnalysis();
       log.info("Received analysis: {}", analysis);
 
@@ -53,11 +55,20 @@ public class FunctionDefinitions {
         return null; // returning null acknowledges and discards received message
       }
 
-      val ge = convertToGraphEvent(analysis);
+      val gqlAnalysisOpt = analysesFetcher.apply(analysis.getAnalysisId());
+      if (gqlAnalysisOpt.isEmpty()) {
+          throw new Exception("GqlAnalysis for SongAnalysisEvent could not be found!");
+      }
+
+      val gqlAnalysis = gqlAnalysisOpt.get();
+      if (isNotAcceptedGqlAnalysis(gqlAnalysis)) {
+          throw new Exception("GqlAnalysis is not PUBLISHED and/or type is not sequencing_experiment");
+      }
+
+      val ge = convertToGraphEvent(gqlAnalysis);
       log.info("Sending graph event: {}", ge);
 
       return convertToGraphEventMessage(ge);
-    };
   }
 
   private Message<GraphEvent> convertToGraphEventMessage(GraphEvent graphEvent) {
@@ -66,12 +77,17 @@ public class FunctionDefinitions {
         .build();
   }
 
-  private Boolean isAcceptedAnalysis(Analysis analysis) {
-    return analysis.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+  private Boolean isAcceptedAnalysis(SongAnalysisEvent.Analysis analysis) {
+    return analysis.getAnalysisType().getName().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
         && analysis.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
   }
 
-  private GraphEvent convertToGraphEvent(Analysis analysis) {
+  private Boolean isNotAcceptedGqlAnalysis(GqlAnalysis analysis) {
+      return analysis.getAnalysisType().equalsIgnoreCase(ACCEPTED_ANALYSIS_TYPE)
+          && analysis.getAnalysisState().equalsIgnoreCase(ACCEPTED_ANALYSIS_STATE);
+  }
+
+  private GraphEvent convertToGraphEvent(GqlAnalysis analysis) {
     return GraphEvent.newBuilder()
         .setId(UUID.randomUUID().toString())
         .setAnalysisId(analysis.getAnalysisId())
@@ -84,24 +100,26 @@ public class FunctionDefinitions {
         .build();
   }
 
-  private List<AnalysisSample> createAnalysisSamplesForGe(Analysis analysis) {
-    return analysis.getSamples().stream()
-        .map(
-            sam ->
-                AnalysisSample.newBuilder()
-                    .setSampleId(sam.getSampleId())
-                    .setSampleId(sam.getSampleId())
-                    .setSubmitterSampleId(sam.getSubmitterSampleId())
-                    .setDonorId(sam.getDonor().getDonorId())
-                    .setSubmitterDonorId(sam.getDonor().getSubmitterDonorId())
-                    .setSpecimenId(sam.getSpecimen().getSpecimenId())
-                    .setSubmitterSpecimenId(sam.getSpecimen().getSubmitterSpecimenId())
-                    .setTumourNormalDesignation(sam.getSpecimen().getTumourNormalDesignation())
-                    .build())
+  private List<AnalysisSample> createAnalysisSamplesForGe(GqlAnalysis analysis) {
+    return analysis.getDonors().stream()
+        .flatMap(
+            donor ->
+              donor.getSpecimens().stream().flatMap(specimen ->
+                specimen.getSamples().stream().map(sample -> AnalysisSample.newBuilder()
+                        .setDonorId(donor.getDonorId())
+                        .setSubmitterDonorId(donor.getSubmitterDonorId())
+                        .setSpecimenId(specimen.getSpecimenId())
+                        .setSubmitterSpecimenId(specimen.getSubmitterSpecimenId())
+                        .setTumourNormalDesignation(specimen.getTumourNormalDesignation())
+                        .setSampleId(sample.getSampleId())
+                        .setSubmitterSampleId(sample.getSubmitterSampleId())
+                        .build())
+              )
+            )
         .collect(Collectors.toUnmodifiableList());
   }
 
-  private List<AnalysisFile> createAnalysisFilesForGe(Analysis analysis) {
+  private List<AnalysisFile> createAnalysisFilesForGe(GqlAnalysis analysis) {
     return analysis.getFiles().stream()
         .map(f -> new AnalysisFile(f.getDataType()))
         .collect(toUnmodifiableList());

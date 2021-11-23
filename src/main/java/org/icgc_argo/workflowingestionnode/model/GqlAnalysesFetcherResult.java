@@ -16,15 +16,27 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc_argo.workflowingestionnode;
+package org.icgc_argo.workflowingestionnode.model;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
 
-@SpringBootApplication
-public class WorkflowIngestionNodeApplication {
+import java.util.List;
 
-  public static void main(String[] args) {
-    SpringApplication.run(WorkflowIngestionNodeApplication.class, args);
-  }
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class GqlAnalysesFetcherResult {
+    private GqlResultData data;
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class GqlResultData {
+        private GqlResultAnalyses analyses;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class GqlResultAnalyses {
+        private List<GqlAnalysis> content;
+    }
 }
