@@ -16,15 +16,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc_argo.workflowingestionnode;
+package org.icgc_argo.workflowingestionnode.components;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import java.util.function.Supplier;
+import lombok.val;
+import org.icgc_argo.workflow_graph_lib.schema.GraphEvent;
+import org.springframework.cloud.schema.registry.avro.AvroSchemaMessageConverter;
+import org.springframework.messaging.converter.MessageConverter;
+import org.springframework.util.MimeType;
 
-@SpringBootApplication
-public class WorkflowIngestionNodeApplication {
-
-  public static void main(String[] args) {
-    SpringApplication.run(WorkflowIngestionNodeApplication.class, args);
+public class GraphEventConverterSupplier implements Supplier<MessageConverter> {
+  public MessageConverter get() {
+    val converter =
+        new AvroSchemaMessageConverter(new MimeType("application", "vnd.GraphEvent+avro"));
+    converter.setSchema(GraphEvent.getClassSchema());
+    return converter;
   }
 }
