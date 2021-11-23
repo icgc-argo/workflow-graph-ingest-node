@@ -20,12 +20,15 @@ package org.icgc_argo.workflowingestionnode.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
+import java.util.Map;
+
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GqlAnalysesFetcherResult {
   private GqlResultData data;
+  private List<Map<String, Object>> errors;
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
