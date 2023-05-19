@@ -10,7 +10,7 @@
 	</parent>
 
 	<artifactId>workflow-graph-ingest-node</artifactId>
-	<version>0.3.0</version>
+	<version>0.3.1</version>
 	<name>workflow-graph-ingest-node</name>
 	<description>workflow-graph-ingest-node</description>
 
@@ -19,14 +19,10 @@
 		<springframework.boot.version>2.3.3.RELEASE</springframework.boot.version>
 		<spring-cloud.version>3.0.8.RELEASE</spring-cloud.version>
 		<spring-cloud-schema-registry.version>1.0.8.RELEASE</spring-cloud-schema-registry.version>
+		<spring-security-oauth2.version>1.0.5.RELEASE</spring-security-oauth2.version>
 	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webflux</artifactId>
-		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
@@ -48,6 +44,12 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-schema-registry-client</artifactId>
 			<version>${spring-cloud-schema-registry.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security.oauth</groupId>
+			<artifactId>spring-security-oauth2</artifactId>
+			<version>${spring-security-oauth2.version}</version>
 		</dependency>
 
 		<dependency>
