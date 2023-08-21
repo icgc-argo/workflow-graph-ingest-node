@@ -55,3 +55,4 @@ rdpc:
     clientId: wfg
     clientSecret: workflowgraph
     tokenUrl: http://localhost:8081/api/oauth/token
+    test: x
